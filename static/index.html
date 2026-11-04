@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Lab Manual & Experiment Generator</title>
+  <style>
+    /* ── Reset & base ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ibm-blue: #0f62fe;
+      --ibm-blue-dark: #0043ce;
+      --ibm-blue-light: #d0e2ff;
+      --ibm-teal: #009d9a;
+      --ibm-purple: #8a3ffc;
+      --ibm-red: #da1e28;
+      --ibm-green: #198038;
+      --ibm-yellow: #f1c21b;
+      --gray-10: #f4f4f4;
+      --gray-20: #e0e0e0;
+      --gray-30: #c6c6c6;
+      --gray-60: #6f6f6f;
+      --gray-80: #393939;
+      --gray-100: #161616;
+      --white: #ffffff;
+      --sidebar-w: 260px;
+      --header-h: 56px;
+      --radius: 4px;
+      --shadow: 0 2px 6px rgba(0,0,0,.12);
+    }
+    html, body { height: 100%; font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px; color: var(--gray-100); background: var(--gray-10); }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    .header {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
+      background: var(--ibm-blue); color: #fff; display: flex;
+      align-items: center; padding: 0 24px; gap: 16px; z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    .header-logo { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+    .header-logo span { color: var(--ibm-yellow); }
+    .header-sub { font-size: 12px; color: rgba(255,255,255,.75); }
+    .header-spacer { flex: 1; }
+    .header-badge {
+      background: rgba(255,255,255,.15); border-radius: 20px;
+      padding: 4px 12px; font-size: 11px; font-weight: 600; letter-spacing: .4px;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────────── */
+    .layout {
+      display: flex; min-height: 100vh; padding-top: var(--header-h);
+    }
+
+    /* ── Sidebar ────────────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w); flex-shrink: 0; background: var(--gray-100);
+      color: #fff; display: flex; flex-direction: column;
+      position: fixed; top: var(--header-h); bottom: 0; left: 0; overflow-y: auto;
+    }
+    .sidebar-section { padding: 20px 16px 8px; font-size: 11px; font-weight: 600;
+      letter-spacing: .8px; color: var(--gray-30); text-transform: uppercase; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 20px; cursor: pointer; transition: background .15s;
+      border-left: 3px solid transparent; font-size: 13px;
+    }
+    .nav-item:hover { background: rgba(255,255,255,.08); }
+    .nav-item.active { background: rgba(15,98,254,.3); border-left-color: var(--ibm-blue); color: #fff; }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { margin-top: auto; padding: 16px; font-size: 11px; color: var(--gray-60); border-top: 1px solid #2d2d2d; }
+
+    /* ── Main content ───────────────────────────────────────────── */
+    .main { margin-left: var(--sidebar-w); flex: 1; padding: 28px; min-width: 0; }
+
+    /* ── Page sections ──────────────────────────────────────────── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── Cards ──────────────────────────────────────────────────── */
+    .card {
+      background: var(--white); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 24px; margin-bottom: 20px;
+    }
+    .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .card-title .icon { font-size: 18px; }
+
+    /* ── Form elements ──────────────────────────────────────────── */
+    .form-grid { display: grid; gap: 16px; }
+    .form-grid-2 { grid-template-columns: 1fr 1fr; }
+    .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 12px; font-weight: 600; color: var(--gray-80); }
+    input[type=text], input[type=number], select, textarea {
+      border: 1px solid var(--gray-30); border-radius: var(--radius);
+      padding: 8px 12px; font-size: 14px; font-family: inherit;
+      transition: border-color .15s; background: var(--white); width: 100%;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--ibm-blue);
+      box-shadow: 0 0 0 2px var(--ibm-blue-light);
+    }
+    textarea { resize: vertical; min-height: 90px; }
+
+    /* ── Buttons ────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: var(--radius); border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s;
+    }
+    .btn-primary { background: var(--ibm-blue); color: #fff; }
+    .btn-primary:hover { background: var(--ibm-blue-dark); }
+    .btn-secondary { background: var(--gray-20); color: var(--gray-100); }
+    .btn-secondary:hover { background: var(--gray-30); }
+    .btn-success { background: var(--ibm-green); color: #fff; }
+    .btn-danger { background: var(--ibm-red); color: #fff; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+
+    /* ── Tags/chips ─────────────────────────────────────────────── */
+    .tag-input-wrap { display: flex; flex-wrap: wrap; gap: 6px;
+      border: 1px solid var(--gray-30); border-radius: var(--radius);
+      padding: 6px 10px; min-height: 42px; cursor: text; }
+    .tag { display: inline-flex; align-items: center; gap: 4px;
+      background: var(--ibm-blue-light); color: var(--ibm-blue-dark);
+      border-radius: 20px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
+    .tag .tag-remove { cursor: pointer; font-size: 14px; line-height: 1; }
+    .tag-input { border: none; outline: none; min-width: 140px; font-size: 13px; padding: 2px 0; }
+
+    /* ── Output area ─────────────────────────────────────────────── */
+    .output-box {
+      background: #1e1e1e; color: #d4d4d4; border-radius: var(--radius);
+      padding: 20px; font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      font-size: 13px; line-height: 1.6; white-space: pre-wrap;
+      max-height: 500px; overflow-y: auto; margin-top: 16px;
+    }
+    .output-markdown {
+      background: var(--white); border: 1px solid var(--gray-20);
+      border-radius: var(--radius); padding: 24px; margin-top: 16px;
+      line-height: 1.75; max-height: 600px; overflow-y: auto;
+    }
+    .output-markdown h1, .output-markdown h2, .output-markdown h3 {
+      margin: 16px 0 8px; color: var(--ibm-blue-dark);
+    }
+    .output-markdown h2 { font-size: 16px; border-bottom: 2px solid var(--ibm-blue-light); padding-bottom: 4px; }
+    .output-markdown h3 { font-size: 14px; }
+    .output-markdown ul, .output-markdown ol { padding-left: 20px; margin: 8px 0; }
+    .output-markdown li { margin: 4px 0; }
+    .output-markdown table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+    .output-markdown th { background: var(--ibm-blue); color: #fff; padding: 8px 12px; text-align: left; }
+    .output-markdown td { padding: 7px 12px; border-bottom: 1px solid var(--gray-20); }
+    .output-markdown tr:nth-child(even) td { background: var(--gray-10); }
+    .output-markdown strong { color: var(--gray-100); }
+    .output-markdown code { background: var(--gray-10); padding: 1px 6px; border-radius: 3px; font-size: 12px; }
+
+    /* ── Status indicators ──────────────────────────────────────── */
+    .status-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px; border-radius: var(--radius);
+      font-size: 13px; margin-bottom: 16px;
+    }
+    .status-ok { background: #defbe6; color: var(--ibm-green); }
+    .status-warn { background: #fff8e1; color: #8c6800; }
+    .status-error { background: #fff1f1; color: var(--ibm-red); }
+    .status-info { background: var(--ibm-blue-light); color: var(--ibm-blue-dark); }
+
+    /* ── Loading spinner ────────────────────────────────────────── */
+    .spinner {
+      display: inline-block; width: 18px; height: 18px;
+      border: 3px solid rgba(255,255,255,.4); border-top-color: #fff;
+      border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Tabs ────────────────────────────────────────────────────── */
+    .tabs { display: flex; gap: 0; border-bottom: 2px solid var(--gray-20); margin-bottom: 20px; }
+    .tab {
+      padding: 10px 20px; cursor: pointer; font-size: 13px; font-weight: 600;
+      color: var(--gray-60); border-bottom: 3px solid transparent; margin-bottom: -2px;
+      transition: all .15s;
+    }
+    .tab.active { color: var(--ibm-blue); border-bottom-color: var(--ibm-blue); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Dashboard stats ────────────────────────────────────────── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--white); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 20px 24px;
+      border-left: 4px solid var(--ibm-blue);
+    }
+    .stat-card.teal { border-left-color: var(--ibm-teal); }
+    .stat-card.purple { border-left-color: var(--ibm-purple); }
+    .stat-card.green { border-left-color: var(--ibm-green); }
+    .stat-num { font-size: 28px; font-weight: 700; color: var(--ibm-blue); }
+    .stat-card.teal .stat-num { color: var(--ibm-teal); }
+    .stat-card.purple .stat-num { color: var(--ibm-purple); }
+    .stat-card.green .stat-num { color: var(--ibm-green); }
+    .stat-label { font-size: 12px; color: var(--gray-60); margin-top: 4px; }
+
+    /* ── Data table ─────────────────────────────────────────────── */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th { background: var(--gray-80); color: #fff; padding: 10px 14px; text-align: left; }
+    .data-table td { padding: 9px 14px; border-bottom: 1px solid var(--gray-20); }
+    .data-table tr:hover td { background: var(--ibm-blue-light); }
+
+    /* ── Section hero ───────────────────────────────────────────── */
+    .page-hero {
+      background: linear-gradient(135deg, var(--ibm-blue) 0%, var(--ibm-blue-dark) 100%);
+      color: #fff; border-radius: var(--radius); padding: 28px 32px; margin-bottom: 24px;
+    }
+    .page-hero h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .page-hero p { font-size: 14px; color: rgba(255,255,255,.85); }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); }
+      .main { margin-left: 0; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Header ──────────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="header-logo">🧪 <span>AI</span> Lab Intelligence</div>
+  <div class="header-sub">Powered by IBM Granite · RAG · watsonx.ai</div>
+  <div class="header-spacer"></div>
+  <div class="header-badge" id="modelBadge">IBM Granite-13B</div>
+</header>
+
+<!-- ─── Layout ──────────────────────────────────────────────────────────── -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-section">Navigation</div>
+    <div class="nav-item active" onclick="showPage('dashboard')">
+      <span class="nav-icon">🏠</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('manual')">
+      <span class="nav-icon">📖</span> Lab Manual Generator
+    </div>
+    <div class="nav-item" onclick="showPage('simulation')">
+      <span class="nav-icon">🔬</span> Virtual Experiment
+    </div>
+    <div class="nav-item" onclick="showPage('rubric')">
+      <span class="nav-icon">📊</span> Evaluation Rubric
+    </div>
+    <div class="nav-item" onclick="showPage('safety')">
+      <span class="nav-icon">⚠️</span> Safety Instructions
+    </div>
+    <div class="nav-item" onclick="showPage('complete')">
+      <span class="nav-icon">🚀</span> Complete Package
+    </div>
+    <div class="sidebar-section">Knowledge Base</div>
+    <div class="nav-item" onclick="showPage('curriculum')">
+      <span class="nav-icon">📚</span> Curriculum Manager
+    </div>
+    <div class="sidebar-section">System</div>
+    <div class="nav-item" onclick="showPage('dashboard'); checkHealth()">
+      <span class="nav-icon">💚</span> Health Check
+    </div>
+    <div class="sidebar-footer">
+      IBM Granite RAG System v1.0<br>
+      AI Lab Manual Generator
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- ── DASHBOARD ───────────────────────────────────────────── -->
+    <section class="page active" id="page-dashboard">
+      <div class="page-hero">
+        <h1>AI Lab Manual & Experiment Generator</h1>
+        <p>RAG-powered assistant using IBM Granite — generate lab manuals, virtual simulations, and grading rubrics from your course syllabus.</p>
+      </div>
+
+      <div id="healthStatus"></div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-num">📖</div>
+          <div class="stat-label">Lab Manual Generator — Full step-by-step manuals with safety notes</div>
+        </div>
+        <div class="stat-card teal">
+          <div class="stat-num">🔬</div>
+          <div class="stat-label">Virtual Simulations — Remote lab support with PhET, Labster & more</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-num">📊</div>
+          <div class="stat-label">Evaluation Rubrics — Bloom's Taxonomy-aligned grading criteria</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-num">⚠️</div>
+          <div class="stat-label">Safety Instructions — PPE, hazards, first aid & emergency protocols</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">⚡</span> Quick Start</div>
+        <p style="color:var(--gray-60);margin-bottom:16px;">Choose a generation mode from the sidebar, fill in your course details, and IBM Granite will generate complete, curriculum-aligned content instantly.</p>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="showPage('manual')">📖 Generate Lab Manual</button>
+          <button class="btn btn-secondary" onclick="showPage('complete')">🚀 Full Package</button>
+          <button class="btn btn-secondary" onclick="showPage('curriculum')">📚 Seed Curriculum DB</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📚</span> Supported Courses (Built-in Curriculum)</div>
+        <table class="data-table">
+          <thead><tr><th>Course Code</th><th>Subject</th><th>Key Topics</th></tr></thead>
+          <tbody>
+            <tr><td>PHY101</td><td>Classical Mechanics</td><td>Newton's Laws, Work-Energy, SHM, Gravitation</td></tr>
+            <tr><td>CHM101</td><td>General Chemistry</td><td>Stoichiometry, Acid-Base, Redox, Kinetics</td></tr>
+            <tr><td>BIO101</td><td>Cell Biology</td><td>Cell Structure, Respiration, Photosynthesis, Mitosis</td></tr>
+            <tr><td>CS201</td><td>Computer Science</td><td>Data Structures, Sorting, Graphs, DP</td></tr>
+            <tr><td>ECE301</td><td>Electrical Engineering</td><td>Ohm's Law, Kirchhoff's Laws, Op-Amps</td></tr>
+            <tr><td>ENV201</td><td>Environmental Science</td><td>Water Quality, Air Pollution, Soil Analysis</td></tr>
+            <tr><td>MATH301</td><td>Numerical Methods</td><td>Root Finding, Integration, ODE Solvers</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── LAB MANUAL ──────────────────────────────────────────── -->
+    <section class="page" id="page-manual">
+      <div class="page-hero">
+        <h1>📖 Lab Manual Generator</h1>
+        <p>Generate a complete, educator-ready laboratory manual with objectives, theory, procedure, safety, and assessment.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">⚙️</span> Experiment Details</div>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label>Experiment Topic *</label>
+            <input type="text" id="m-topic" placeholder="e.g. Acid-Base Titration" />
+          </div>
+          <div class="form-group">
+            <label>Course Code</label>
+            <input type="text" id="m-course" placeholder="e.g. CHM101" value="CHM101" />
+          </div>
+          <div class="form-group">
+            <label>Student Level</label>
+            <select id="m-level">
+              <option>undergraduate</option>
+              <option>high school</option>
+              <option>graduate</option>
+              <option>advanced</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Lab Duration (hours)</label>
+            <input type="number" id="m-duration" value="3" min="0.5" max="8" step="0.5" />
+          </div>
+          <div class="form-group" style="grid-column:span 2">
+            <label>Available Equipment (press Enter to add)</label>
+            <div class="tag-input-wrap" id="m-equip-wrap" onclick="document.getElementById('m-equip-input').focus()">
+              <input class="tag-input" id="m-equip-input" placeholder="Type equipment and press Enter…" onkeydown="addTag(event,'m-equip-wrap','m-equip-input')" />
+            </div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="m-btn" onclick="generateManual()">
+            📖 Generate Lab Manual
+          </button>
+          <button class="btn btn-secondary" onclick="clearOutput('m-output')">Clear</button>
+        </div>
+      </div>
+
+      <div class="card" id="m-output" style="display:none">
+        <div class="card-title"><span class="icon">📄</span> Generated Lab Manual</div>
+        <div class="output-markdown" id="m-result"></div>
+      </div>
+    </section>
+
+    <!-- ── VIRTUAL SIMULATION ──────────────────────────────────── -->
+    <section class="page" id="page-simulation">
+      <div class="page-hero">
+        <h1>🔬 Virtual Experiment Simulator</h1>
+        <p>Generate detailed virtual lab guides with simulation instructions, expected observations, and sample data sets.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">⚙️</span> Simulation Configuration</div>
+        <div class="form-grid form-grid-3">
+          <div class="form-group">
+            <label>Experiment Topic *</label>
+            <input type="text" id="s-topic" placeholder="e.g. Simple Pendulum" />
+          </div>
+          <div class="form-group">
+            <label>Course Code</label>
+            <input type="text" id="s-course" placeholder="e.g. PHY101" value="PHY101" />
+          </div>
+          <div class="form-group">
+            <label>Subject Area</label>
+            <select id="s-subject">
+              <option>physics</option>
+              <option>chemistry</option>
+              <option>biology</option>
+              <option>computer_science</option>
+              <option>electrical_engineering</option>
+              <option>environmental_science</option>
+              <option>mathematics</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Number of Trials</label>
+            <input type="number" id="s-trials" value="5" min="1" max="20" />
+          </div>
+          <div class="form-group">
+            <label>Include Sample Data</label>
+            <select id="s-data">
+              <option value="true">Yes — Generate virtual dataset</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="s-btn" onclick="generateSimulation()">
+            🔬 Generate Simulation Guide
+          </button>
+          <button class="btn btn-secondary" onclick="clearOutput('s-output')">Clear</button>
+        </div>
+      </div>
+
+      <div class="card" id="s-output" style="display:none">
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab('sim','guide')">Simulation Guide</div>
+          <div class="tab" onclick="switchTab('sim','data')">Sample Data</div>
+        </div>
+        <div class="tab-panel active" id="sim-guide">
+          <div class="output-markdown" id="s-result"></div>
+        </div>
+        <div class="tab-panel" id="sim-data">
+          <div id="s-data-table"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── RUBRIC ──────────────────────────────────────────────── -->
+    <section class="page" id="page-rubric">
+      <div class="page-hero">
+        <h1>📊 Evaluation Rubric Generator</h1>
+        <p>Generate detailed Bloom's Taxonomy-aligned grading rubrics with performance descriptors and grade conversion scales.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">⚙️</span> Rubric Configuration</div>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label>Experiment / Assignment Topic *</label>
+            <input type="text" id="r-topic" placeholder="e.g. Titration of Acetic Acid" />
+          </div>
+          <div class="form-group">
+            <label>Course Code</label>
+            <input type="text" id="r-course" placeholder="e.g. CHM101" value="CHM101" />
+          </div>
+          <div class="form-group">
+            <label>Rubric Type</label>
+            <select id="r-type">
+              <option value="lab_report">Lab Report</option>
+              <option value="virtual_lab">Virtual Lab</option>
+              <option value="practical_exam">Practical Exam</option>
+              <option value="group_project">Group Project</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Total Points</label>
+            <input type="number" id="r-points" value="100" min="10" max="500" />
+          </div>
+          <div class="form-group" style="grid-column:span 2">
+            <label>Learning Objectives (press Enter to add)</label>
+            <div class="tag-input-wrap" id="r-obj-wrap" onclick="document.getElementById('r-obj-input').focus()">
+              <input class="tag-input" id="r-obj-input" placeholder="Type objective and press Enter…" onkeydown="addTag(event,'r-obj-wrap','r-obj-input')" />
+            </div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="r-btn" onclick="generateRubric()">
+            📊 Generate Rubric
+          </button>
+          <button class="btn btn-secondary" onclick="clearOutput('r-output')">Clear</button>
+        </div>
+      </div>
+
+      <div class="card" id="r-output" style="display:none">
+        <div class="card-title"><span class="icon">📋</span> Generated Rubric</div>
+        <div class="output-markdown" id="r-result"></div>
+      </div>
+    </section>
+
+    <!-- ── SAFETY ─────────────────────────────────────────────── -->
+    <section class="page" id="page-safety">
+      <div class="page-hero">
+        <h1>⚠️ Safety Instruction Generator</h1>
+        <p>Generate comprehensive safety protocols including PPE, chemical hazards, first aid, waste disposal, and emergency procedures.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">⚙️</span> Experiment Safety Details</div>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label>Experiment Topic *</label>
+            <input type="text" id="sf-topic" placeholder="e.g. Flame Test for Metal Ions" />
+          </div>
+          <div class="form-group">
+            <label>Course Code</label>
+            <input type="text" id="sf-course" placeholder="e.g. CHM101" value="CHM101" />
+          </div>
+          <div class="form-group">
+            <label>Chemicals / Reagents (press Enter)</label>
+            <div class="tag-input-wrap" id="sf-chem-wrap" onclick="document.getElementById('sf-chem-input').focus()">
+              <input class="tag-input" id="sf-chem-input" placeholder="e.g. HCl, NaOH…" onkeydown="addTag(event,'sf-chem-wrap','sf-chem-input')" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Equipment Used (press Enter)</label>
+            <div class="tag-input-wrap" id="sf-equip-wrap" onclick="document.getElementById('sf-equip-input').focus()">
+              <input class="tag-input" id="sf-equip-input" placeholder="e.g. Bunsen burner…" onkeydown="addTag(event,'sf-equip-wrap','sf-equip-input')" />
+            </div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="sf-btn" onclick="generateSafety()">
+            ⚠️ Generate Safety Instructions
+          </button>
+          <button class="btn btn-secondary" onclick="clearOutput('sf-output')">Clear</button>
+        </div>
+      </div>
+
+      <div class="card" id="sf-output" style="display:none">
+        <div class="card-title"><span class="icon">🛡️</span> Safety Protocol</div>
+        <div class="output-markdown" id="sf-result"></div>
+      </div>
+    </section>
+
+    <!-- ── COMPLETE PACKAGE ────────────────────────────────────── -->
+    <section class="page" id="page-complete">
+      <div class="page-hero">
+        <h1>🚀 Complete Lab Package Generator</h1>
+        <p>Generate the full lab package in one click: Manual + Virtual Simulation + Rubric + Safety Instructions — all aligned to your syllabus.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">⚙️</span> Package Configuration</div>
+        <div class="form-grid form-grid-3">
+          <div class="form-group">
+            <label>Experiment Topic *</label>
+            <input type="text" id="cp-topic" placeholder="e.g. Acid-Base Titration" />
+          </div>
+          <div class="form-group">
+            <label>Course Code</label>
+            <input type="text" id="cp-course" placeholder="e.g. CHM101" value="CHM101" />
+          </div>
+          <div class="form-group">
+            <label>Subject Area</label>
+            <select id="cp-subject">
+              <option>chemistry</option>
+              <option>physics</option>
+              <option>biology</option>
+              <option>computer_science</option>
+              <option>electrical_engineering</option>
+              <option>environmental_science</option>
+              <option>mathematics</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Student Level</label>
+            <select id="cp-level">
+              <option>undergraduate</option>
+              <option>high school</option>
+              <option>graduate</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Duration (hours)</label>
+            <input type="number" id="cp-duration" value="3" min="0.5" max="8" step="0.5" />
+          </div>
+          <div class="form-group">
+            <label>Rubric Type</label>
+            <select id="cp-rubric-type">
+              <option value="lab_report">Lab Report</option>
+              <option value="virtual_lab">Virtual Lab</option>
+              <option value="practical_exam">Practical Exam</option>
+              <option value="group_project">Group Project</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="cp-btn" onclick="generateComplete()">
+            🚀 Generate Complete Package
+          </button>
+          <button class="btn btn-secondary" onclick="clearOutput('cp-output')">Clear</button>
+        </div>
+      </div>
+
+      <div id="cp-progress" style="display:none" class="status-bar status-info">
+        <div class="spinner" style="border-top-color:var(--ibm-blue);border-color:var(--ibm-blue-light)"></div>
+        Generating complete lab package with IBM Granite…
+      </div>
+
+      <div id="cp-output" style="display:none">
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab('cp','manual')">📖 Manual</div>
+          <div class="tab" onclick="switchTab('cp','sim')">🔬 Simulation</div>
+          <div class="tab" onclick="switchTab('cp','rubric')">📊 Rubric</div>
+          <div class="tab" onclick="switchTab('cp','safety')">⚠️ Safety</div>
+        </div>
+        <div class="tab-panel active card" id="cp-manual">
+          <div class="output-markdown" id="cp-manual-content"></div>
+        </div>
+        <div class="tab-panel card" id="cp-sim">
+          <div class="output-markdown" id="cp-sim-content"></div>
+        </div>
+        <div class="tab-panel card" id="cp-rubric-panel">
+          <div class="output-markdown" id="cp-rubric-content"></div>
+        </div>
+        <div class="tab-panel card" id="cp-safety">
+          <div class="output-markdown" id="cp-safety-content"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CURRICULUM ──────────────────────────────────────────── -->
+    <section class="page" id="page-curriculum">
+      <div class="page-hero">
+        <h1>📚 Curriculum Knowledge Base</h1>
+        <p>Manage the RAG vector store: seed built-in curriculum, ingest custom documents, and search the knowledge base.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">🌱</span> Seed Built-in Curriculum</div>
+        <p style="color:var(--gray-60);margin-bottom:16px;">Load all 10 built-in STEM curriculum documents (PHY101, CHM101, BIO101, CS201, ECE301, ENV201, MATH301 + safety + assessment guidelines) into the ChromaDB vector store.</p>
+        <button class="btn btn-success" id="seed-btn" onclick="seedCurriculum()">🌱 Seed Curriculum Database</button>
+        <div id="seed-result" style="margin-top:12px"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📥</span> Ingest Custom Document</div>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label>Course Code</label>
+            <input type="text" id="ing-course" placeholder="e.g. CHEM301" />
+          </div>
+          <div class="form-group">
+            <label>Subject</label>
+            <input type="text" id="ing-subject" placeholder="e.g. Organic Chemistry" />
+          </div>
+          <div class="form-group" style="grid-column:span 2">
+            <label>Document Text *</label>
+            <textarea id="ing-text" rows="6" placeholder="Paste your syllabus or curriculum text here…"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="ingestDocument()">📥 Ingest Document</button>
+        </div>
+        <div id="ing-result" style="margin-top:12px"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">🔍</span> Search Knowledge Base</div>
+        <div class="form-grid" style="grid-template-columns:1fr auto">
+          <input type="text" id="search-q" placeholder="Search curriculum… e.g. 'Newton's laws experiment'" onkeydown="if(event.key==='Enter')searchCurriculum()" />
+          <button class="btn btn-primary" onclick="searchCurriculum()">🔍 Search</button>
+        </div>
+        <div id="search-results" style="margin-top:16px"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // ── Navigation ──────────────────────────────────────────────────────────
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    event.currentTarget && event.currentTarget.classList.add('active');
+  }
+
+  // ── Tag input ───────────────────────────────────────────────────────────
+  function addTag(event, wrapId, inputId) {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    const input = document.getElementById(inputId);
+    const val = input.value.trim();
+    if (!val) return;
+    const wrap = document.getElementById(wrapId);
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.dataset.value = val;
+    tag.innerHTML = val + ' <span class="tag-remove" onclick="this.parentElement.remove()">×</span>';
+    wrap.insertBefore(tag, input);
+    input.value = '';
+  }
+
+  function getTags(wrapId) {
+    return Array.from(document.querySelectorAll('#' + wrapId + ' .tag')).map(t => t.dataset.value);
+  }
+
+  // ── Markdown renderer ────────────────────────────────────────────────────
+  function renderMarkdown(text) {
+    if (!text) return '<em style="color:var(--gray-60)">No content generated.</em>';
+    return text
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code>$1</code>')
+      .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+      .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/^(?!<[hlocp])(.+)$/gm, '<p>$1</p>');
+  }
+
+  function clearOutput(id) {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+  }
+
+  // ── Loading state helpers ───────────────────────────────────────────────
+  function setLoading(btnId, loading, label) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.innerHTML = loading
+      ? `<span class="spinner"></span> Generating…`
+      : label;
+  }
+
+  // ── Health check ────────────────────────────────────────────────────────
+  async function checkHealth() {
+    try {
+      const res = await fetch('/api/health');
+      const d = await res.json();
+      const el = document.getElementById('healthStatus');
+      if (!el) return;
+      const cls = d.status === 'ok' ? 'status-ok' : 'status-warn';
+      const missing = d.missing_config?.length
+        ? `⚠️ Missing config: ${d.missing_config.join(', ')}`
+        : '✅ All credentials configured';
+      el.innerHTML = `<div class="status-bar ${cls}">
+        <strong>${d.status === 'ok' ? '✅' : '⚠️'} System ${d.status}</strong> — 
+        Model: ${d.model} — ${missing}
+      </div>`;
+    } catch (e) {
+      const el = document.getElementById('healthStatus');
+      if (el) el.innerHTML = '<div class="status-bar status-error">❌ API server not reachable. Start Flask with: python app.py</div>';
+    }
+  }
+
+  // ── Lab Manual ──────────────────────────────────────────────────────────
+  async function generateManual() {
+    const topic = document.getElementById('m-topic').value.trim();
+    if (!topic) { alert('Please enter an experiment topic.'); return; }
+    setLoading('m-btn', true, '📖 Generate Lab Manual');
+    try {
+      const res = await fetch('/api/generate/manual', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          topic, course_code: document.getElementById('m-course').value,
+          student_level: document.getElementById('m-level').value,
+          duration_hours: parseFloat(document.getElementById('m-duration').value),
+          equipment_available: getTags('m-equip-wrap'),
+        })
+      });
+      const d = await res.json();
+      const out = document.getElementById('m-output');
+      out.style.display = 'block';
+      document.getElementById('m-result').innerHTML = d.success
+        ? renderMarkdown(d.data.manual_text)
+        : `<span style="color:red">Error: ${d.error}</span>`;
+    } finally {
+      setLoading('m-btn', false, '📖 Generate Lab Manual');
+    }
+  }
+
+  // ── Virtual Simulation ──────────────────────────────────────────────────
+  async function generateSimulation() {
+    const topic = document.getElementById('s-topic').value.trim();
+    if (!topic) { alert('Please enter an experiment topic.'); return; }
+    setLoading('s-btn', true, '🔬 Generate Simulation Guide');
+    try {
+      const res = await fetch('/api/generate/simulation', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          topic,
+          course_code: document.getElementById('s-course').value,
+          subject: document.getElementById('s-subject').value,
+          num_trials: parseInt(document.getElementById('s-trials').value),
+          include_virtual_data: document.getElementById('s-data').value === 'true',
+        })
+      });
+      const d = await res.json();
+      document.getElementById('s-output').style.display = 'block';
+      if (d.success) {
+        document.getElementById('s-result').innerHTML = renderMarkdown(d.data.simulation_guide);
+        if (d.data.sample_data) {
+          const sd = d.data.sample_data;
+          let table = '<table class="data-table"><thead><tr>' +
+            sd.columns.map(c => `<th>${c.replace(/_/g,' ')}</th>`).join('') + '</tr></thead><tbody>';
+          sd.rows.forEach(row => {
+            table += '<tr>' + sd.columns.map(c => `<td>${row[c]}</td>`).join('') + '</tr>';
+          });
+          table += '</tbody></table>';
+          document.getElementById('s-data-table').innerHTML = table;
+        }
+      } else {
+        document.getElementById('s-result').innerHTML = `<span style="color:red">Error: ${d.error}</span>`;
+      }
+    } finally {
+      setLoading('s-btn', false, '🔬 Generate Simulation Guide');
+    }
+  }
+
+  // ── Rubric ──────────────────────────────────────────────────────────────
+  async function generateRubric() {
+    const topic = document.getElementById('r-topic').value.trim();
+    if (!topic) { alert('Please enter a topic.'); return; }
+    setLoading('r-btn', true, '📊 Generate Rubric');
+    try {
+      const res = await fetch('/api/generate/rubric', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          topic, course_code: document.getElementById('r-course').value,
+          rubric_type: document.getElementById('r-type').value,
+          total_points: parseInt(document.getElementById('r-points').value),
+          learning_objectives: getTags('r-obj-wrap'),
+        })
+      });
+      const d = await res.json();
+      document.getElementById('r-output').style.display = 'block';
+      document.getElementById('r-result').innerHTML = d.success
+        ? renderMarkdown(d.data.rubric_text)
+        : `<span style="color:red">Error: ${d.error}</span>`;
+    } finally {
+      setLoading('r-btn', false, '📊 Generate Rubric');
+    }
+  }
+
+  // ── Safety ──────────────────────────────────────────────────────────────
+  async function generateSafety() {
+    const topic = document.getElementById('sf-topic').value.trim();
+    if (!topic) { alert('Please enter an experiment topic.'); return; }
+    setLoading('sf-btn', true, '⚠️ Generate Safety Instructions');
+    try {
+      const res = await fetch('/api/generate/safety', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          topic, course_code: document.getElementById('sf-course').value,
+          chemicals: getTags('sf-chem-wrap'),
+          equipment: getTags('sf-equip-wrap'),
+        })
+      });
+      const d = await res.json();
+      document.getElementById('sf-output').style.display = 'block';
+      document.getElementById('sf-result').innerHTML = d.success
+        ? renderMarkdown(d.data.safety_text)
+        : `<span style="color:red">Error: ${d.error}</span>`;
+    } finally {
+      setLoading('sf-btn', false, '⚠️ Generate Safety Instructions');
+    }
+  }
+
+  // ── Complete Package ────────────────────────────────────────────────────
+  async function generateComplete() {
+    const topic = document.getElementById('cp-topic').value.trim();
+    if (!topic) { alert('Please enter an experiment topic.'); return; }
+    setLoading('cp-btn', true, '🚀 Generate Complete Package');
+    document.getElementById('cp-progress').style.display = 'flex';
+    try {
+      const res = await fetch('/api/generate/complete', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          topic,
+          course_code: document.getElementById('cp-course').value,
+          subject: document.getElementById('cp-subject').value,
+          student_level: document.getElementById('cp-level').value,
+          duration_hours: parseFloat(document.getElementById('cp-duration').value),
+          rubric_type: document.getElementById('cp-rubric-type').value,
+        })
+      });
+      const d = await res.json();
+      document.getElementById('cp-output').style.display = 'block';
+      if (d.success) {
+        document.getElementById('cp-manual-content').innerHTML = renderMarkdown(d.data.manual?.manual_text);
+        document.getElementById('cp-sim-content').innerHTML = renderMarkdown(d.data.simulation?.simulation_guide);
+        document.getElementById('cp-rubric-content').innerHTML = renderMarkdown(d.data.rubric?.rubric_text);
+        document.getElementById('cp-safety-content').innerHTML = renderMarkdown(d.data.safety?.safety_text);
+      } else {
+        document.getElementById('cp-manual-content').innerHTML = `<span style="color:red">Error: ${d.error}</span>`;
+      }
+    } finally {
+      setLoading('cp-btn', false, '🚀 Generate Complete Package');
+      document.getElementById('cp-progress').style.display = 'none';
+    }
+  }
+
+  // ── Curriculum Manager ──────────────────────────────────────────────────
+  async function seedCurriculum() {
+    const btn = document.getElementById('seed-btn');
+    btn.disabled = true; btn.textContent = 'Seeding…';
+    try {
+      const res = await fetch('/api/curriculum/seed', { method: 'POST' });
+      const d = await res.json();
+      document.getElementById('seed-result').innerHTML = d.success
+        ? `<div class="status-bar status-ok">✅ Seeded ${d.chunks_ingested} chunks into ChromaDB vector store.</div>`
+        : `<div class="status-bar status-error">❌ ${d.error}</div>`;
+    } finally {
+      btn.disabled = false; btn.textContent = '🌱 Seed Curriculum Database';
+    }
+  }
+
+  async function ingestDocument() {
+    const text = document.getElementById('ing-text').value.trim();
+    if (!text) { alert('Please paste document text.'); return; }
+    try {
+      const res = await fetch('/api/curriculum/ingest', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          text,
+          course_code: document.getElementById('ing-course').value || 'CUSTOM',
+          subject: document.getElementById('ing-subject').value || 'General',
+        })
+      });
+      const d = await res.json();
+      document.getElementById('ing-result').innerHTML = d.success
+        ? `<div class="status-bar status-ok">✅ Ingested ${d.chunks_ingested} chunks. Document ID: ${d.doc_id}</div>`
+        : `<div class="status-bar status-error">❌ ${d.error}</div>`;
+    } catch (e) {
+      document.getElementById('ing-result').innerHTML = `<div class="status-bar status-error">❌ ${e.message}</div>`;
+    }
+  }
+
+  async function searchCurriculum() {
+    const q = document.getElementById('search-q').value.trim();
+    if (!q) return;
+    const container = document.getElementById('search-results');
+    container.innerHTML = '<div class="status-bar status-info">🔍 Searching…</div>';
+    try {
+      const res = await fetch(`/api/curriculum/search?q=${encodeURIComponent(q)}&top_k=5`);
+      const d = await res.json();
+      if (d.success && d.results.length) {
+        let html = `<p style="margin-bottom:12px;color:var(--gray-60)">${d.results.length} results for "<strong>${q}</strong>"</p>`;
+        d.results.forEach((r, i) => {
+          html += `<div class="card" style="margin-bottom:12px;padding:16px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+              <strong style="font-size:13px">#${i+1} — ${r.metadata?.course_code || '—'} · ${r.metadata?.subject || '—'}</strong>
+              <span style="color:var(--ibm-green);font-size:12px">Similarity: ${(r.similarity*100).toFixed(1)}%</span>
+            </div>
+            <div style="font-size:13px;color:var(--gray-80);line-height:1.6">${r.text.substring(0, 300)}…</div>
+          </div>`;
+        });
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = '<div class="status-bar status-warn">⚠️ No results found. Try seeding the curriculum first.</div>';
+      }
+    } catch (e) {
+      container.innerHTML = `<div class="status-bar status-error">❌ ${e.message}</div>`;
+    }
+  }
+
+  // ── Tab switcher ────────────────────────────────────────────────────────
+  function switchTab(prefix, tab) {
+    const allTabs = event.currentTarget.closest('.tabs').querySelectorAll('.tab');
+    allTabs.forEach(t => t.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    const panelMap = {
+      'sim-guide': 'sim', 'sim-data': 'sim',
+      'cp-manual': 'cp', 'cp-sim': 'cp', 'cp-rubric-panel': 'cp', 'cp-safety': 'cp',
+    };
+    const panelIds = Object.keys(panelMap).filter(k => panelMap[k] === prefix);
+    panelIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('active');
+    });
+
+    const targetId = prefix === 'sim' ? (tab === 'guide' ? 'sim-guide' : 'sim-data')
+                    : tab === 'rubric' ? 'cp-rubric-panel' : `cp-${tab}`;
+    const target = document.getElementById(targetId);
+    if (target) target.classList.add('active');
+  }
+
+  // ── Init ────────────────────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    checkHealth();
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', function() {
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+  });
+</script>
+</body>
+</html>
